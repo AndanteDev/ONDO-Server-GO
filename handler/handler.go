@@ -2,9 +2,14 @@ package handler
 
 import "github.com/gin-gonic/gin"
 
-func signinHandler(c *gin.Context) {
+func googleCallBackHandler(c *gin.Context) {
 
 }
-func signupHandler(c *gin.Context) {
+
+func kakaoCallBackHandler(c *gin.Context) {
+
+}
+
+func kakaoLoginHandler(c *gin.Context) {
 
 }
