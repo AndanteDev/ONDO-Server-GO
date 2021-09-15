@@ -7,8 +7,21 @@ func MakeHandler() *gin.Engine {
 
 	v1 := r.Group("/api/v1")
 	{
-		v1.POST("/signin", signinHandler)
-		v1.POST("/signup", signupHandler)
+		v1.Group("/auth")
+		{
+			v1.Group("/google")
+			{
+				v1.GET("/login", googleLoginHandler)
+				v1.GET("callback", googleCallBackHandler)
+			}
+			v1.Group("/kakao")
+			{
+				v1.GET("/login", kakaoLoginHandler)
+				v1.GET("callback", kakaoCallBackHandler)
+
+			}
+		}
+
 	}
 
 	return r
