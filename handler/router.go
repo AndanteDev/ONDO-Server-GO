@@ -1,28 +1,35 @@
 package handler
 
-import "github.com/gin-gonic/gin"
-
+import (
+	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
+)
+rdb := redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "", // no password set
+		DB:       0,  // use default DB
+	})
 func MakeHandler() *gin.Engine {
+	
 	r := gin.Default()
 
 	v1 := r.Group("/api/v1")
 	{
 		v1.Group("/auth")
 		{
-			v1.Group("/google")
+			google := v1.Group("/google")
 			{
-				v1.GET("/login", googleLoginHandler)
-				v1.GET("callback", googleCallBackHandler)
+				google.GET("/login", googleLoginHandler)
+				google.GET("callback", googleCallBackHandler)
 			}
-			v1.Group("/kakao")
+			kakao := v1.Group("/kakao")
 			{
-				v1.GET("/login", kakaoLoginHandler)
-				v1.GET("callback", kakaoCallBackHandler)
-
+				kakao.GET("/login", kakaoLoginHandler)
+				kakao.GET("callback", kakaoCallBackHandler)
 			}
 		}
 
 	}
-
+	r.GET("/", indexhandler)
 	return r
 }
