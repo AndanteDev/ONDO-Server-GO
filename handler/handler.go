@@ -3,13 +3,9 @@ package handler
 import (
 	"log"
 	"net/http"
-	"ondo/server/go/info"
 	"ondo/server/go/utils"
-	"os"
 
 	"github.com/gin-gonic/gin"
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
 )
 
 type OauthConn interface {
@@ -24,20 +20,19 @@ func kakaoLoginHandler(c *gin.Context) {
 
 }
 func googleLoginHandler(c *gin.Context) {
-	var googleOauthConfig = oauth2.Config{
-		RedirectURL:  info.GoogleRedirectPath,
-		ClientID:     os.Getenv("webclient_id"),
-		ClientSecret: os.Getenv("webclient_secret"),
-		Scopes:       []string{"https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/userinfo.profile"},
-		Endpoint:     google.Endpoint,
-	}
-	state := utils.GenerateStateOauthToken
-	url := googleOauthConfig.AuthCodeURL()
+	os := c.Request.Header.Get("User-Agent")
+	utils.IdentifyOS(os)
+	url := webOauth(c)
 
+	c.Redirect(http.StatusTemporaryRedirect, url)
 }
 
 func googleCallBackHandler(c *gin.Context) {
-	c.Redirect(http.StatusOK, "/")
+	oauthstate := rdb.Get(c, "oauthstate")
+	if c.Request.FormValue("state") != oauthstate.Val() {
+		log.Println("invaild google state Token:", oauthstate.Val())
+		c.Redirect(http.StatusTemporaryRedirect, "/")
+	}
 }
 func kakaoCallBackHandler(c *gin.Context) {
 
