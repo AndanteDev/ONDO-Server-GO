@@ -17,17 +17,17 @@ var rdb = redis.NewClient(&redis.Options{
 	DB:       0,  // use default DB
 })
 
-func GenerateStateOauthToken(rdb *redis.Client, c *gin.Context) (string, string) {
-	accexpiration := 30 * time.Minute
-	accessToken := randValue()
+func GetOauthState(c *gin.Context) string {
+	state := rdb.Get(c, "oauthstate").Val()
 
-	refexpiration := 60 * 24 * time.Hour
-	refreshToken := randValue()
+	return state
+}
+func GenerateOauthState(c *gin.Context) string {
+	expiration := 30 * time.Minute
+	state := randValue()
+	rdb.Set(c, "oauthstate", state, expiration).Val()
 
-	rdb.Set(c, "oauthstate_accessToken", accessToken, accexpiration).Val()
-	rdb.Set(c, "oauthstate_refreshToken", refreshToken, refexpiration).Val()
-
-	return accessToken, refreshToken
+	return state
 }
 func IdentifyOS(os string) string {
 	return ""
