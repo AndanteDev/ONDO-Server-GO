@@ -11,6 +11,12 @@ import (
 	"golang.org/x/oauth2"
 )
 
+var rdb = redis.NewClient(&redis.Options{
+	Addr:     "localhost:6379",
+	Password: "", // no password set
+	DB:       0,  // use default DB
+})
+
 func GenerateStateOauthToken(rdb *redis.Client, c *gin.Context) (string, string) {
 	accexpiration := 30 * time.Minute
 	accessToken := randValue()
