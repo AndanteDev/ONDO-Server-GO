@@ -3,22 +3,19 @@ package handler
 import (
 	"log"
 	"net/http"
-	"ondo/server/go/utils"
 
-	"github.com/gin-gonic/gin"
-)
-
-func kakaoLoginHandler(c *gin.Context) {
-
+type OauthConn interface {
+	loginHandler(c *gin.Context)
+}
+type Oauth struct {
+	oauth OauthConn
+	os    string
 }
 func googleLoginHandler(c *gin.Context) {
 	os := c.Request.Header.Get("User-Agent")
 	utils.IdentifyOS(os)
 	url := webOauth(c)
-
-	c.Redirect(http.StatusTemporaryRedirect, url)
 }
-
 func googleCallBackHandler(c *gin.Context) {
 	oauthstate := rdb.Get(c, "oauthstate")
 	if c.Request.FormValue("state") != oauthstate.Val() {
@@ -34,6 +31,8 @@ func googleCallBackHandler(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, data)
 }
+func googleLoginHandler(c *gin.Context) {
+
 
 func kakaoCallBackHandler(c *gin.Context) {
 
