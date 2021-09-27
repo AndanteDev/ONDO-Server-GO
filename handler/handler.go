@@ -30,7 +30,6 @@ func googleLoginHandler(c *gin.Context) {
 	fmt.Println(url)
 	c.Redirect(http.StatusFound, url)
 }
-
 func googleCallBackHandler(c *gin.Context) {
 	oauthstate := utils.GetOauthState(c, rdb)
 	fmt.Println(oauthstate, c.Request.FormValue("state"))
