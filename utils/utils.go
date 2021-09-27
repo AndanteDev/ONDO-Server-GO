@@ -3,7 +3,10 @@ package utils
 import (
 	"encoding/base64"
 	"fmt"
+	"io/ioutil"
 	"math/rand"
+	"net/http"
+	"ondo/server/go/info"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -11,18 +14,12 @@ import (
 	"golang.org/x/oauth2"
 )
 
-var rdb = redis.NewClient(&redis.Options{
-	Addr:     "localhost:6379",
-	Password: "", // no password set
-	DB:       0,  // use default DB
-})
-
-func GetOauthState(c *gin.Context) string {
+func GetOauthState(c *gin.Context, rdb *redis.Client) string {
 	state := rdb.Get(c, "oauthstate").Val()
 
 	return state
 }
-func GenerateOauthState(c *gin.Context) string {
+func GenerateOauthState(c *gin.Context, rdb *redis.Client) string {
 	expiration := 30 * time.Minute
 	state := randValue()
 	rdb.Set(c, "oauthstate", state, expiration).Val()
@@ -40,10 +37,13 @@ func randValue() string {
 	return state
 }
 
-func GetGoogleUserInfo(c *gin.Context, code string, ac oauth2.Config) ([]byte, error) {
+func GetGoogleUserInfo(c *gin.Context, code string, ac *oauth2.Config) ([]byte, error) {
 	token, err := ac.Exchange(c, code)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to Exchange %s", err.Error())
 	}
-
+	resp, err := http.Get(info.GoogleUrlAPI + token.AccessToken)
+	if err != nil {
+	}
+	return ioutil.ReadAll(resp.Body)
 }
