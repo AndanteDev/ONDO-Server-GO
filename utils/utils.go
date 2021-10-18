@@ -1,17 +1,18 @@
 package utils
 
 import (
+	"bytes"
 	"encoding/base64"
-	"fmt"
-	"io/ioutil"
+	"encoding/json"
+	"io"
 	"math/rand"
 	"net/http"
 	"ondo/server/go/info"
+	"ondo/server/go/model"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
-	"golang.org/x/oauth2"
 )
 
 func GetOauthState(c *gin.Context, rdb *redis.Client) string {
@@ -37,13 +38,28 @@ func randValue() string {
 	return state
 }
 
-func GetGoogleUserInfo(c *gin.Context, code string, ac *oauth2.Config) ([]byte, error) {
-	token, err := ac.Exchange(c, code)
+func GetGoogleAccessToken(ac *model.OauthConfig) (*model.Token, error) {
+	token := &model.Token{}
+
+	pbytes, _ := json.Marshal(token)
+	buff := bytes.NewBuffer(pbytes)
+	resp, err := http.Post(info.GetGoogleTokenURL, "application/json", buff)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to Exchange %s", err.Error())
+		return nil, err
 	}
-	resp, err := http.Get(info.GoogleUrlAPI + token.AccessToken)
+	respbody, err := io.ReadAll(resp.Body)
 	if err != nil {
+		return nil, err
 	}
-	return ioutil.ReadAll(resp.Body)
+	err = json.Unmarshal(respbody, token)
+
+	if err != nil {
+		return nil, err
+	}
+	return token, nil
+}
+
+func GetGoogleUserInfo(token *model.Token) ([]byte, error) {
+	info.GetGoogleUserURL
+	return nil, nil
 }
