@@ -1,3 +1,5 @@
 package model
 
-func (db *MysqlHandler)SqlLoginHandler
+func (db *MysqlHandler) SqlLoginHandler() {
+
+}
