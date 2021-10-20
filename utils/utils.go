@@ -1,17 +1,22 @@
 package utils
 
 import (
+	"bytes"
 	"encoding/base64"
+	"encoding/json"
+	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math/rand"
 	"net/http"
 	"ondo/server/go/info"
+	"ondo/server/go/model"
+	"os"
 	"time"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
-	"golang.org/x/oauth2"
 )
 
 func GetOauthState(c *gin.Context, rdb *redis.Client) string {
@@ -37,13 +42,52 @@ func randValue() string {
 	return state
 }
 
-func GetGoogleUserInfo(c *gin.Context, code string, ac *oauth2.Config) ([]byte, error) {
-	token, err := ac.Exchange(c, code)
+func GetGoogleAccessToken(ac *model.OauthConfig) (*model.Token, error) {
+	pbytes, _ := json.Marshal(ac)
+	fmt.Println(string(pbytes))
+	buff := bytes.NewBuffer(pbytes)
+	resp, err := http.Post(info.GetGoogleTokenURL, "application/json", buff)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to Exchange %s", err.Error())
+		return nil, errors.New(err.Error() + " Get Token Error")
 	}
-	resp, err := http.Get(info.GoogleUrlAPI + token.AccessToken)
+
+	token := &model.Token{}
+	respbody, err := io.ReadAll(resp.Body)
 	if err != nil {
+		return nil, errors.New(err.Error() + " Token ResponseBody error")
 	}
-	return ioutil.ReadAll(resp.Body)
+	err = json.Unmarshal(respbody, token)
+	if err != nil {
+		return nil, errors.New(err.Error() + " Token Unmarshal error")
+	}
+	return token, nil
+}
+
+func GetGoogleUserInfoJWT(token *model.Token) (string, error) {
+	resp, err := http.Get(info.GetGoogleUserURL + token.AccessToken)
+	if err != nil {
+		return "", errors.New(err.Error() + " Get UserInfo Error")
+	}
+
+	respbody, err := io.ReadAll(resp.Body)
+
+	if err != nil {
+		return "", errors.New(err.Error() + " Userinfo ResponseBody error")
+	}
+	jwtstring, err := createUserToken(respbody)
+	return jwtstring, nil
+}
+
+func createUserToken(respbody []byte) (jwtstring string, err error) {
+
+	atClaims := jwt.MapClaims{}
+	atClaims["authorized"] = true
+	atClaims["user_id"] = userid
+	atClaims["exp"] = time.Now().Add(time.Minute * 15).Unix()
+	at := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
+	jwtstring, err = at.SignedString([]byte(os.Getenv("ACCESS_SECRET")))
+	if err != nil {
+		return "", err
+	}
+	return jwtstring, nil
 }
