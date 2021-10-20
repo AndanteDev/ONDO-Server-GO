@@ -1,52 +1,45 @@
 package handler
 
 import (
-	"fmt"
 	"log"
 	"net/http"
+	"ondo/server/go/httputil"
 	"ondo/server/go/info"
+	"ondo/server/go/model"
 	"ondo/server/go/utils"
 	"os"
 
 	"github.com/gin-gonic/gin"
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
 )
 
-var googlewebOauthConfig = oauth2.Config{
-	RedirectURL:  info.GoogleRedirectPath,
-	ClientID:     os.Getenv("webclient_id"),
-	ClientSecret: "8NwJMGbg30V9Z8QwXo26z8cY",
-	Scopes:       []string{"https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/userinfo.profile"},
-	Endpoint:     google.Endpoint,
+var googleOauthConfig = &model.OauthConfig{
+	Client_id:     os.Getenv("webclient_id"),
+	Client_secret: os.Getenv("webclient_secret"),
+	Scope:         []string{"https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/userinfo.profile"},
+	Redirect_uri:  info.GoogleRedirectPath,
+	Grant_type:    "authorization_code",
 }
 
-func kakaoLoginHandler(c *gin.Context) {
-
-}
-func googleLoginHandler(c *gin.Context) {
-	state := utils.GenerateOauthState(c, rdb)
-	url := googlewebOauthConfig.AuthCodeURL(state)
-	fmt.Println(url)
-	c.Redirect(http.StatusFound, url)
-}
+//receive code and get accesstoken
 func googleCallBackHandler(c *gin.Context) {
-	oauthstate := utils.GetOauthState(c, rdb)
-	fmt.Println(oauthstate, c.Request.FormValue("state"))
-	if c.Request.FormValue("state") != oauthstate {
-		log.Printf("invaild google state Token:%s state:%s", oauthstate, c.Request.FormValue("state"))
-		c.Redirect(http.StatusFound, "/")
-		return
-	}
-	data, err := utils.GetGoogleUserInfo(c, c.Request.FormValue("code"), &googlewebOauthConfig)
-	fmt.Println(c.Request.FormValue("code"))
+	googleOauthConfig.Code = c.Query("code")
+	googletoken, err := utils.GetGoogleAccessToken(googleOauthConfig)
 	if err != nil {
+		httputil.NewRedirect()
 		log.Println(err.Error())
 		c.Redirect(http.StatusFound, "/")
 		return
 	}
-	fmt.Fprintln(c.Writer, string(data))
-	c.JSON(http.StatusOK, data)
+	jwtstring, err := utils.GetGoogleUserInfoJWT(googletoken)
+
+	if err != nil {
+		httputil.NewRedirect()
+		log.Println(err.Error())
+		c.Redirect(http.StatusFound, "/")
+		return
+	}
+	c.JSON(http.StatusOK, map[string][]byte{"jwtstring": jwtstring})
+
 }
 
 func kakaoCallBackHandler(c *gin.Context) {

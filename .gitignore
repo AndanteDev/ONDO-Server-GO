@@ -1,1 +1,3 @@
-info
+info/info.go
+server.crt
+server.key
