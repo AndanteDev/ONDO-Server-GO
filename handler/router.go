@@ -17,13 +17,13 @@ func MakeHandler() *gin.Engine {
 
 	v1 := r.Group("/api/v1")
 	{
-		v1.Group("/auth")
+		auth := v1.Group("/auth")
 		{
-			google := v1.Group("/google")
+			google := auth.Group("/google")
 			{
 				google.GET("callback", googleCallBackHandler)
 			}
-			kakao := v1.Group("/kakao")
+			kakao := auth.Group("/kakao")
 			{
 				kakao.GET("callback", kakaoCallBackHandler)
 			}
