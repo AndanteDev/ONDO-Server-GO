@@ -14,22 +14,32 @@ import (
 
 var googleOauthConfig = &model.OauthConfig{
 	Client_id:     os.Getenv("webclient_id"),
-	Client_secret: "",
+	Client_secret: os.Getenv("webclient_secret"),
+	Scope:         []string{"https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/userinfo.profile"},
 	Redirect_uri:  info.GoogleRedirectPath,
 	Grant_type:    "authorization_code",
 }
 
+//receive code and get accesstoken
 func googleCallBackHandler(c *gin.Context) {
 	googleOauthConfig.Code = c.Query("code")
-	token, err := utils.GetGoogleAccessToken(googleOauthConfig)
+	googletoken, err := utils.GetGoogleAccessToken(googleOauthConfig)
 	if err != nil {
-
 		httputil.NewRedirect()
 		log.Println(err.Error())
 		c.Redirect(http.StatusFound, "/")
 		return
 	}
-	utils.GetGoogleUserInfo(token)
+	jwtstring, err := utils.GetGoogleUserInfoJWT(googletoken)
+
+	if err != nil {
+		httputil.NewRedirect()
+		log.Println(err.Error())
+		c.Redirect(http.StatusFound, "/")
+		return
+	}
+	c.JSON(http.StatusOK, map[string][]byte{"jwtstring": jwtstring})
+
 }
 
 func kakaoCallBackHandler(c *gin.Context) {
