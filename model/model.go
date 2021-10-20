@@ -13,15 +13,16 @@ type user struct {
 }
 
 type Token struct {
-	Access_token  string    `json:"access_token"`
-	Token_type    string    `json:"token_type"`
-	Expiration    time.Time `json:"expires_in"`
-	Refresh_token string    `json:"refresh_token"`
+	AccessToken  string    `json:"access_token" binding:"required"`
+	TokenType    string    `json:"token_type" binding:"required"`
+	Expiration   time.Time `json:"expires_in" binding:"required"`
+	RefreshToken string    `json:"refresh_token" binding:"required"`
 }
 type OauthConfig struct {
 	Code          string
 	Client_id     string
 	Client_secret string
+	Scope         []string
 	Redirect_uri  string
 	Grant_type    string
 }
