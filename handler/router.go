@@ -21,6 +21,7 @@ func MakeHandler() *gin.Engine {
 		{
 			google := auth.Group("/google")
 			{
+				google.GET("login", testgoogleLoginHandler)
 				google.GET("callback", googleCallBackHandler)
 			}
 			kakao := auth.Group("/kakao")

@@ -1,15 +1,15 @@
 package handler
 
 import (
-	"log"
 	"net/http"
-	"ondo/server/go/httputil"
 	"ondo/server/go/info"
 	"ondo/server/go/model"
 	"ondo/server/go/utils"
 	"os"
 
 	"github.com/gin-gonic/gin"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 )
 
 var googleOauthConfig = &model.OauthConfig{
@@ -20,26 +20,29 @@ var googleOauthConfig = &model.OauthConfig{
 	Grant_type:    "authorization_code",
 }
 
+var googleTestOauthConfig = &oauth2.Config{
+	RedirectURL:  info.GoogleRedirectPath,
+	ClientID:     os.Getenv("webclient_id"),
+	ClientSecret: os.Getenv("webclient_secret"),
+	Scopes:       []string{"https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/userinfo.profile"},
+	Endpoint:     google.Endpoint,
+}
+
+func testgoogleLoginHandler(c *gin.Context) {
+	state := utils.GenerateStateOauthCookie(c)
+	url := googleTestOauthConfig.AuthCodeURL(state)
+	c.Redirect(http.StatusTemporaryRedirect, url)
+}
+
+func googleLoginHandler(c *gin.Context) {
+
+}
+
 //receive code and get accesstoken
 func googleCallBackHandler(c *gin.Context) {
-	googleOauthConfig.Code = c.Query("code")
-	googletoken, err := utils.GetGoogleAccessToken(googleOauthConfig)
-	if err != nil {
-		httputil.NewRedirect()
-		log.Println(err.Error())
-		c.Redirect(http.StatusFound, "/")
-		return
-	}
-	jwtstring, err := utils.GetGoogleUserInfoJWT(googletoken)
-
-	if err != nil {
-		httputil.NewRedirect()
-		log.Println(err.Error())
-		c.Redirect(http.StatusFound, "/")
-		return
-	}
-	c.JSON(http.StatusOK, map[string]string{"jwtstring": jwtstring})
-
+	googleUserInfo, err := utils.GetGoogleUserInfo(googleTestOauthConfig, c)
+	utils.HandleErr(http.StatusNotFound, err, c)
+	c.JSON(http.StatusOK, string(googleUserInfo))
 }
 
 func kakaoCallBackHandler(c *gin.Context) {
